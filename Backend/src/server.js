@@ -1,22 +1,21 @@
 const express = require('express');
-const path = require('path');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
-require('dotenv').config();
+require('dotenv').config({ path: require('path').join(__dirname, '..', '.env') });
 
 //routes
 const userRoutes = require('./routes/userRoutes');
 const youtubeRoutes = require('./routes/youtubeRoutes');
-const oauthRoutes = require('./routes/oauthRoutes');
-const authStoreRoutes = require('./routes/authStoreRoutes');
+const assetRoutes = require('./routes/assetRoutes');
 const storeRoutes = require('./routes/storeRoutes');
-const productRoutes = require('./routes/productRoutes');
-const orderRoutes = require('./routes/orderRoutes');
-const paymentRoutes = require('./routes/paymentRoutes');
-const magicRoutes = require('./routes/magicRoutes');
-const { stripeWebhookHandler } = require('./controllers/paymentWebhookController');
+const adminRoutes = require('./routes/adminRoutes');
+const agencyRoutes = require('./routes/agencyRoutes');
+const adsRoutes = require('./routes/adsRoutes');
+const performanceRoutes = require('./routes/performanceRoutes');
+const walletRoutes = require('./routes/walletRoutes');
+
 
 //middleware
 const { errorHandler } = require('./middleware/errorHandler');
@@ -24,7 +23,7 @@ const { connectDB } = require('./config/database');
 
 // Initialize Express app
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 5001;
 
 // Security middleware
 app.use(helmet());
@@ -39,51 +38,48 @@ app.use('/api/', limiter);
 
 // CORS configuration
 const allowedOrigins = [
-  "http://localhost:8080",
-  "http://localhost:5001",
   "http://localhost:3000",
-  "https://cre8-hub.vercel.app",
-  process.env.CORS_ORIGIN,
-  // Add common Vercel domains
-  "https://cre8hub-murex.vercel.app",
-  "https://cre8hub.vercel.app"
-].filter(Boolean); // Remove undefined values
+  "http://localhost:5173",
+  "http://127.0.0.1:5173",
+  "http://localhost:8080",
+  "http://localhost:5001"
+];
 
-console.log('🔗 Allowed CORS origins:', allowedOrigins);
+if (process.env.FRONTEND_URL) {
+  process.env.FRONTEND_URL.split(',').forEach(url => {
+    const trimmed = url.trim().replace(/\/$/, '');
+    if (trimmed && !allowedOrigins.includes(trimmed)) {
+      allowedOrigins.push(trimmed);
+    }
+  });
+}
 
 app.use(cors({
-  origin: function (origin, callback) {
-    // Allow requests with no origin (mobile apps, curl, etc.)
+  origin: (origin, callback) => {
     if (!origin) return callback(null, true);
-    
-    // In development, allow all origins
-    if (process.env.NODE_ENV === 'development') {
-      return callback(null, true);
+    const normalized = origin.replace(/\/$/, '');
+    try {
+      const hostname = new URL(origin).hostname;
+      if (
+        allowedOrigins.includes(normalized) ||
+        hostname.endsWith('.vercel.app') ||
+        process.env.NODE_ENV !== 'production'
+      ) {
+        return callback(null, true);
+      }
+    } catch {
+      if (allowedOrigins.includes(normalized) || process.env.NODE_ENV !== 'production') {
+        return callback(null, true);
+      }
     }
-    
-    // In production, check allowed origins
-    if (allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    }
-    
-    console.log('❌ CORS blocked origin:', origin);
-    console.log('✅ Allowed origins:', allowedOrigins);
-    return callback(new Error('Not allowed by CORS'));
+    return callback(new Error(`CORS blocked for origin: ${origin}`));
   },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
-  optionsSuccessStatus: 200
+  credentials: true
 }));
-
-// Stripe webhook must use raw body and be registered before JSON parser
-app.post('/api/payments/webhook', express.raw({ type: 'application/json' }), stripeWebhookHandler);
-app.post('/api/v1/payments/webhook', express.raw({ type: 'application/json' }), stripeWebhookHandler);
 
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
 // Logging middleware
 if (process.env.NODE_ENV === 'development') {
@@ -102,22 +98,15 @@ app.get('/api/health', (req, res) => {
 
 // API routes
 app.use('/api/users', userRoutes);
-app.use('/api/auth', authStoreRoutes);
 app.use("/api/youtube", youtubeRoutes);
-app.use("/api/oauth", oauthRoutes);
-app.use('/api/stores', storeRoutes);
-app.use('/api/products', productRoutes);
-app.use('/api/orders', orderRoutes);
-app.use('/api/payments', paymentRoutes);
-app.use('/api/magic', magicRoutes);
+app.use("/api/assets", assetRoutes);
+app.use("/api/store", storeRoutes);
+app.use("/api/admin", adminRoutes);
+app.use("/api/agency", agencyRoutes);
+app.use("/api/ads", adsRoutes);
+app.use("/api/performance", performanceRoutes);
+app.use("/api/wallet", walletRoutes);
 
-// Legacy store API compatibility (/api/v1/*)
-app.use('/api/v1/stores', storeRoutes);
-app.use('/api/v1/products', productRoutes);
-app.use('/api/v1/orders', orderRoutes);
-app.use('/api/v1/payments', paymentRoutes);
-app.use('/api/v1/auth', authStoreRoutes);
-app.use('/api/v1/magic', magicRoutes);
 
 // 404 handler
 app.use('*', (req, res) => {
@@ -133,6 +122,12 @@ const startServer = async () => {
     // Connect to database
     await connectDB();
     console.log('✅ Database connected successfully');
+
+    // Start background trend monitor (Milestone 5.1)
+    const { startTrendMonitor } = require('./services/trendMonitor');
+    if (process.env.NODE_ENV !== 'test') {
+      startTrendMonitor();
+    }
     
     // Start server
     app.listen(PORT, () => {

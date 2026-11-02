@@ -1,9 +1,12 @@
+import logger
 import os
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_core.prompts import PromptTemplate
-from langchain.chains import RetrievalQA
-from langchain.chains import LLMChain
-from langchain.schema import Document
+from services.ingest import get_vb
+from services.llm import get_llm
+from langchain_classic.chains import RetrievalQA
+from langchain_classic.chains import LLMChain
+from langchain_core.documents import Document
 from langchain_community.vectorstores import FAISS
 import logging
 from dotenv import load_dotenv
@@ -39,9 +42,8 @@ def get_chain(transcripts: Optional[List[str]] = None):
             retriever = vectorstore.as_retriever(search_type="similarity", search_kwargs={"k": len(docs)})
             
         else:
-            # Use existing FAISS index (fallback) - lazy import to avoid heavy imports on module load
+            # Use existing FAISS index (fallback)
             logger.info("Using existing FAISS index")
-            from services.ingest import get_vb
             db = get_vb()
             retriever = db.as_retriever(search_type="similarity", search_kwargs={"k": 1000})
 
@@ -95,8 +97,8 @@ def get_chain(transcripts: Optional[List[str]] = None):
         )
 
         logger.info("Getting LLM instance...")
-        from services.llm import get_llm
-        llm = get_llm("gemma2:2b")
+        # Using ChatGoogleGenerativeAI via get_llm (replaces Ollama)
+        llm = get_llm("gemini-2.5-flash")
         logger.info("LLM instance obtained successfully.")
 
         # Create the QA chain with proper input/output keys
@@ -189,20 +191,30 @@ EVALUATE and return EXACTLY this JSON:
 GEN_MODEL = os.getenv("GEN_MODEL", "gemini-1.5-flash")
 CRITIC_MODEL = os.getenv("CRITIC_MODEL", "gemini-1.5-pro")
 
-# LLMs
-generator_llm = ChatGoogleGenerativeAI(model=GEN_MODEL, temperature=0.7)
-critic_llm = ChatGoogleGenerativeAI(model=CRITIC_MODEL, temperature=0.2)
+# LLMs — wrapped in try/except so importing chain.py doesn't crash
+# if GOOGLE_API_KEY isn't set at import time (it's validated at startup in cre8echo.py)
+try:
+    generator_llm = ChatGoogleGenerativeAI(model=GEN_MODEL, temperature=0.7)
+    critic_llm = ChatGoogleGenerativeAI(model=CRITIC_MODEL, temperature=0.2)
+except Exception as _llm_init_err:
+    logger.warning(f"⚠️  Could not initialise module-level LLMs at import time: {_llm_init_err}")
+    generator_llm = None
+    critic_llm = None
 
 # Prompts
 generator_tmpl = PromptTemplate.from_template(GENERATOR_PROMPT)
 critic_tmpl = PromptTemplate.from_template(CRITIC_PROMPT)
 
-# Chains
-generator_chain = LLMChain(llm=generator_llm, prompt=generator_tmpl, verbose=False)
-critic_chain = LLMChain(llm=critic_llm, prompt=critic_tmpl, verbose=False)
+# Chains — only built if LLMs are available
+if generator_llm and critic_llm:
+    generator_chain = LLMChain(llm=generator_llm, prompt=generator_tmpl, verbose=False)
+    critic_chain = LLMChain(llm=critic_llm, prompt=critic_tmpl, verbose=False)
+else:
+    generator_chain = None
+    critic_chain = None
 
 __all__ = [
-    "get_chain",
+    "extract_chain",
     "generator_chain",
     "critic_chain",
     "GEN_MODEL",

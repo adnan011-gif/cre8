@@ -77,22 +77,8 @@ Health check endpoint to verify the service is running.
 
 3. **Run the Server:**
    ```bash
-   uvicorn cre8echo:app --host 0.0.0.0 --port 8000 --reload
+   uvicorn script:app --host 0.0.0.0 --port 8000 --reload
    ```
-
-## Deploying to Render
-
-Render supports infrastructure-as-code via `render.yaml`, which is included at the root of this project. To deploy:
-- Push your changes to the branch connected to Render (or create a new GitHub repo with this folder).
-- In the Render dashboard, click **New > Blueprint Deploy** and select your repository.
-- Confirm the generated service settings. The blueprint creates a Python web service that
-  - installs dependencies with `pip install -r requirements.txt`
-  - runs `uvicorn cre8echo:app --host 0.0.0.0 --port $PORT`
-  - exposes the `/health` endpoint for health checks.
-- Provide the required environment variables (`GOOGLE_API_KEY`, `MONGO_URI`, optional Redis variables, etc.). Secrets marked `sync: false` in `render.yaml` need to be entered manually in the Render UI.
-- Deploy. Render will automatically build and start the service using the configuration.
-
-If you prefer not to use blueprints, you can create a standard Render Web Service pointing to the `Cre8Hub-AI-Workflow` directory and reuse the same build and start commands above.
 
 ## Usage Examples
 

@@ -19,6 +19,7 @@ import { User, LogOut } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 export const Header = () => {
+  const [isOpen, setIsOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { user, signOut } = useBackendAuth();
   const navigate = useNavigate();
@@ -39,27 +40,19 @@ export const Header = () => {
   const navItems = [
     {
       name: "Home",
-      link: "/",
+      link: "#",
     },
     {
       name: "Features",
-      link: "/features",
-    },
-    {
-      name: "Showcase",
-      link: "/showcase",
-    },
-    {
-      name: "Store",
-      link: "/cre8store",
+      link: "#features",
     },
     {
       name: "Pricing",
-      link: "/#pricing",
+      link: "#pricing",
     },
     {
       name: "About",
-      link: "/#faq",
+      link: "#faq",
     },
   ];
   return (
@@ -98,9 +91,14 @@ export const Header = () => {
       </Button>
     </div>
   ) : (
-    <NavbarButton variant="primary" href="/signup">
-      Sign Up
-    </NavbarButton>
+    <div className="flex items-center gap-3">
+      <NavbarButton variant="secondary" href="/signin">
+        Sign In
+      </NavbarButton>
+      <NavbarButton variant="primary" href="/signup">
+        Sign Up
+      </NavbarButton>
+    </div>
   )}
 </div>
 
@@ -158,13 +156,24 @@ export const Header = () => {
                   </Button>
                 </>
               ) : (
-                <NavbarButton
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  variant="primary"
-                  className="w-full"
-                >
-                  Sign Up
-                </NavbarButton>
+                <div className="flex flex-col gap-3 w-full">
+                  <NavbarButton
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    variant="secondary"
+                    className="w-full"
+                    href="/signin"
+                  >
+                    Sign In
+                  </NavbarButton>
+                  <NavbarButton
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    variant="primary"
+                    className="w-full"
+                    href="/signup"
+                  >
+                    Sign Up
+                  </NavbarButton>
+                </div>
               )}
             </div>
           </MobileNavMenu>

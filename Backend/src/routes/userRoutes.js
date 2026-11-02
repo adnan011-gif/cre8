@@ -5,9 +5,16 @@ const { validateProfileUpdate } = require('../middleware/validation');
 
 const router = express.Router();
 
+// Email verification code flow
+router.post('/send-code', userController.sendCode);
+router.post('/send-code-signup', userController.sendCodeForSignUp);
+router.post('/verify-code', userController.verifyCode);
+
 // Authentication routes
 router.post('/signin', userController.signIn);
 router.post('/signup', userController.signUp);
+router.post('/forgot-password', userController.forgotPassword);
+router.post('/reset-password', userController.resetPassword);
 router.post('/refresh-token', userController.refreshToken);
 router.post('/logout', userController.logout);
 
@@ -25,4 +32,4 @@ router.post('/past-outputs', authenticateToken, userController.addPastOutput);
 router.get('/', authenticateToken, requireRole(['admin']), userController.getAllUsers);
 router.get('/:userId', authenticateToken, requireRole(['admin']), userController.getUserById);
 
-module.exports = router; 
+module.exports = router;

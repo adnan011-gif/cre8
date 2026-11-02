@@ -12,7 +12,7 @@ import { Header } from "@/components/Header";
 
 const Landing = () => {
   const navigate = useNavigate();
-  const { user } = useBackendAuth();
+  const { user, loading } = useBackendAuth();
 
 
   useEffect(() => {

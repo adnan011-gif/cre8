@@ -1,12 +1,12 @@
 import { Card } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
-import { useState, useEffect } from "react";
-import { Youtube, Instagram, Twitter, Linkedin, Sparkles, Loader2, CheckCircle, Link2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { ReactElement, useState } from "react";
+import { Youtube, Instagram, Twitter, Linkedin, Sparkles, Loader2, CheckCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { apiService } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
-import { useBackendAuth } from "@/hooks/useBackendAuth";
 
 interface PlatformCardProps {
   platform: "youtube" | "instagram" | "twitter" | "linkedin";
@@ -32,37 +32,16 @@ const platformColors = {
   linkedin: "text-blue-600",
 };
 
-export function PlatformCard({ platform, title, description, onSelect, isSelected, setShowTranscriptRequest, showTranscriptRequest }: PlatformCardProps) {
+export function PlatformCard({ platform, title, description, onSelect, isSelected }: PlatformCardProps) {
   const { toast } = useToast();
-  const { user } = useBackendAuth();
   const [isPersonifyEnabled, setIsPersonifyEnabled] = useState(false);
+  const [showTranscriptRequest, setShowTranscriptRequest] = useState(false);
   const [channelId, setChannelId] = useState('');
   const [isExtracting, setIsExtracting] = useState(false);
   const [extractionStatus, setExtractionStatus] = useState<'none' | 'extracting' | 'completed' | 'error'>('none');
-  const [youtubeConnected, setYoutubeConnected] = useState(false);
-  const [isConnecting, setIsConnecting] = useState(false);
-  const [channelName, setChannelName] = useState('');
   
   const Icon = platformIcons[platform];
   const colorClass = platformColors[platform];
-
-  // Check YouTube connection status on mount
-  useEffect(() => {
-    const checkYouTubeConnection = async () => {
-      if (platform === 'youtube' && user?.id) {
-        try {
-          const result = await apiService.getYouTubeConnectionStatus();
-          if (result.data && typeof result.data === 'object' && 'connected' in result.data) {
-            setYoutubeConnected(result.data.connected as boolean);
-          }
-        } catch (error) {
-          console.error('Error checking YouTube connection:', error);
-        }
-      }
-    };
-    
-    checkYouTubeConnection();
-  }, [platform, user?.id]);
 
   const handlePersonifyToggle = (checked: boolean) => {
     setIsPersonifyEnabled(checked);
@@ -88,73 +67,21 @@ export function PlatformCard({ platform, title, description, onSelect, isSelecte
     return url; // Return as-is if no pattern matches
   };
 
-  const handleConnectYouTube = async () => {
-    if (!user?.id) {
-      toast({
-        title: "Authentication required",
-        description: "Please sign in to connect YouTube",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsConnecting(true);
-    
-    try {
-      const result = await apiService.getYouTubeAuthUrl();
-      
-      if (result.error) {
-        toast({
-          title: "Failed to get authorization URL",
-          description: result.error,
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // Redirect to YouTube OAuth
-      if (result.data && typeof result.data === 'object' && 'authUrl' in result.data) {
-        window.location.href = result.data.authUrl as string;
-      }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to connect to YouTube",
-        variant: "destructive",
-      });
-    } finally {
-      setIsConnecting(false);
-    }
-  };
-
   const handleExtractPersona = async () => {
-    if (!user?.id) {
+    if (!channelId.trim()) {
       toast({
-        title: "Authentication required",
-        description: "Please sign in to extract persona",
+        title: "Channel ID required",
+        description: "Please enter a valid YouTube channel ID",
         variant: "destructive",
       });
       return;
     }
-  
-    const userId = localStorage.getItem("userId"); // must be set at login/signup
-    if (!userId) {
-      toast({
-        title: "User not logged in",
-        description: "Please sign in before extracting persona",
-        variant: "destructive",
-      });
-      return;
-    }
-  
+
     setIsExtracting(true);
     setExtractionStatus('extracting');
-  
+    
     try {
-      // Use OAuth-based extraction if connected, otherwise use channel ID
-      const result = youtubeConnected 
-        ? await apiService.extractPersonaFromYouTube(user.id)
-        : await apiService.extractPersonaFromChannel(channelId, user.id);
+      const result = await apiService.extractPersonaFromYouTube(channelId);
       
       if (result.error) {
         setExtractionStatus('error');
@@ -165,15 +92,14 @@ export function PlatformCard({ platform, title, description, onSelect, isSelecte
         });
         return;
       }
-  
+
       setExtractionStatus('completed');
       toast({
         title: "Persona extracted successfully!",
-        description: youtubeConnected 
-          ? "Your YouTube persona has been analyzed from your channel"
-          : "Your YouTube persona has been analyzed and saved",
+        description: "Your YouTube persona has been analyzed and saved",
       });
-  
+      
+      // Clear the input and close the request after successful extraction
       setChannelId('');
       setShowTranscriptRequest(false);
     } catch (error) {
@@ -220,138 +146,76 @@ export function PlatformCard({ platform, title, description, onSelect, isSelecte
           
           {platform === "youtube" && (
             <div
-              className="flex items-center space-x-3"
+              className="flex items-center space-x-2"
               onClick={(e) => e.stopPropagation()}
             >
-              {youtubeConnected && (
-                <div className="flex items-center space-x-1 px-2 py-1 bg-green-500/10 rounded-full border border-green-500/20">
-                  <Link2 className="w-3 h-3 text-green-400" />
-                  <span className="text-xs font-medium text-green-400">Connected</span>
-                </div>
-              )}
-              <div className="flex items-center space-x-2">
-                <Sparkles className="w-4 h-4 text-cosmic-glow" />
-                <span className="text-sm font-medium">Personify</span>
-                <Switch
-                  checked={isPersonifyEnabled}
-                  onCheckedChange={handlePersonifyToggle}
-                  className="data-[state=checked]:bg-cre8-purple"
-                />
-              </div>
+              <Sparkles className="w-4 h-4 text-cosmic-glow" />
+              <span className="text-sm font-medium">Personify</span>
+              <Switch
+                checked={isPersonifyEnabled}
+                onCheckedChange={handlePersonifyToggle}
+                className="data-[state=checked]:bg-cre8-purple"
+              />
             </div>
           )}
         </div>
         
-        {showTranscriptRequest && platform === "youtube" && (
+        {showTranscriptRequest && (
           <div className="mt-4 p-4 bg-white/20 rounded-xl space-y-3">
             <div className="flex items-center space-x-2">
               <Sparkles className="w-4 h-4 text-cosmic-glow" />
               <h4 className="font-medium text-sm">Persona Enhancement Ready</h4>
             </div>
+            <p className="text-xs text-muted-foreground">
+              Enter your YouTube channel to extract your unique content persona and create personalized content.
+            </p>
             
-            {youtubeConnected ? (
-              // Connected State - Show only extraction button
-              <>
-                <div className="flex items-center justify-between p-3 bg-green-500/10 rounded-lg border border-green-500/20">
-                  <div className="flex items-center space-x-2">
-                    <Link2 className="w-4 h-4 text-green-400" />
-                    <div>
-                      <p className="text-sm font-medium text-green-400">YouTube Connected</p>
-                      <p className="text-xs text-green-400/70">Ready to extract from your channel</p>
-                    </div>
-                  </div>
-                  <CheckCircle className="w-5 h-5 text-green-400" />
-                </div>
-                
-                <p className="text-xs text-muted-foreground">
-                  Extract your persona from your own YouTube videos for the most accurate results.
-                </p>
-                
-                <div className="flex space-x-2">
-                  <Button 
-                    size="sm" 
-                    onClick={handleExtractPersona}
-                    disabled={isExtracting}
-                    className="flex-1 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white"
-                  >
-                    {isExtracting ? (
-                      <>
-                        <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-                        Extracting from Your Channel...
-                      </>
-                    ) : extractionStatus === 'completed' ? (
-                      <>
-                        <CheckCircle className="w-3 h-3 mr-1" />
-                        Extracted Successfully
-                      </>
-                    ) : (
-                      <>
-                        <Sparkles className="w-3 h-3 mr-1" />
-                        Extract Persona from My Videos
-                      </>
-                    )}
-                  </Button>
-                  <Button 
-                    size="sm" 
-                    onClick={() => setShowTranscriptRequest(false)}
-                    variant="outline"
-                    className="border-white/20 text-white hover:bg-white/10"
-                  >
-                    Later
-                  </Button>
-                </div>
-              </>
-            ) : (
-              // Not Connected State - Show connection option
-              <>
-                <p className="text-xs text-muted-foreground">
-                  Connect your YouTube account to extract persona from your own videos.
-                </p>
-                
-                <div className="space-y-2">
-                  <div className="flex items-center space-x-2">
-                    <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-                    <span className="text-xs font-medium">Connect Your YouTube Account (Recommended)</span>
-                  </div>
-                  <p className="text-xs text-muted-foreground ml-4">
-                    Access your own videos and transcripts for more accurate persona extraction
-                  </p>
-                  <Button 
-                    size="sm" 
-                    onClick={handleConnectYouTube}
-                    disabled={isConnecting}
-                    className="ml-4 bg-red-600 hover:bg-red-700 text-white"
-                  >
-                    {isConnecting ? (
-                      <>
-                        <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-                        Connecting...
-                      </>
-                    ) : (
-                      <>
-                        <Youtube className="w-3 h-3 mr-1" />
-                        Connect YouTube Account
-                      </>
-                    )}
-                  </Button>
-                </div>
-                
-                <div className="flex space-x-2 pt-2">
-                  <Button 
-                    size="sm" 
-                    onClick={() => setShowTranscriptRequest(false)}
-                    variant="outline"
-                    className="border-white/20 text-white hover:bg-white/10"
-                  >
-                    Later
-                  </Button>
-                </div>
-              </>
-            )}
+            <div className="space-y-2">
+              <Input
+                placeholder="https://youtube.com/@yourchannel or UC..."
+                value={channelId}
+                onChange={(e) => setChannelId(getChannelIdFromUrl(e.target.value))}
+                className="bg-white/10 border-white/20 text-white text-xs"
+              />
+              <p className="text-xs text-muted-foreground">
+                Paste your YouTube channel URL or channel ID
+              </p>
+            </div>
+            
+            <div className="flex space-x-2">
+              <Button 
+                size="sm" 
+                onClick={handleGrantAccess}
+                disabled={isExtracting || !channelId.trim()}
+                className="bg-gray-800 rounded-full hover:bg-white hover:text-black disabled:opacity-50"
+              >
+                {isExtracting ? (
+                  <>
+                    <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                    Extracting...
+                  </>
+                ) : extractionStatus === 'completed' ? (
+                  <>
+                    <CheckCircle className="w-3 h-3 mr-1" />
+                    Extracted
+                  </>
+                ) : (
+                  'Extract Persona'
+                )}
+              </Button>
+              <Button 
+                size="sm" 
+                onClick={() => setShowTranscriptRequest(false)}
+                variant="outline"
+                className="border-white/20 text-white hover:bg-white/10"
+              >
+                Later
+              </Button>
+            </div>
             
             {extractionStatus === 'completed' && (
               <div className="text-xs text-green-400 text-center bg-green-500/10 rounded-lg p-2">
-                ✓ Persona extracted successfully from your YouTube channel!
+                ✓ Persona extracted successfully!
               </div>
             )}
             

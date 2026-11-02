@@ -39,4 +39,9 @@ echo ""
 echo "Press Ctrl+C to stop the server"
 echo ""
 
-uvicorn script:app --host 0.0.0.0 --port 8000 --reload
+# Use project venv if it exists, otherwise fall back to system uvicorn
+if [ -f "venv/bin/uvicorn" ]; then
+  venv/bin/uvicorn cre8echo:app --host 0.0.0.0 --port 8000 --reload
+else
+  uvicorn cre8echo:app --host 0.0.0.0 --port 8000 --reload
+fi

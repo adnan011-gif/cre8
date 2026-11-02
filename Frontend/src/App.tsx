@@ -15,19 +15,14 @@ import NotFound from "./pages/NotFound";
 import ProfileSetup from "./pages/ProfileSetup";
 import Cre8Echo from "./pages/Cre8Echo";
 import Dashboard from "./pages/Dashboard";
-import YouTubeCallback from "./pages/YouTubeCallback";
-import Cre8Canvas from "./pages/Cre8Canvas";
-import Cre8Boost from "./pages/Cre8Boost";
-import Features from "./pages/Features";
-import Showcase from "./pages/Showcase";
-import PrivacyPolicy from "./pages/PrivacyPolicy";
-import TermsOfService from "./pages/TermsOfService";
+import Cre8Studio from "./pages/Cre8Studio";
 import Cre8Store from "./pages/Cre8Store";
 import PublicStore from "./pages/PublicStore";
-import PublicStoreProduct from "./pages/PublicStoreProduct";
-import StoreSuccess from "./pages/StoreSuccess";
-import StoreCancel from "./pages/StoreCancel";
-import StoreAccess from "./pages/StoreAccess";
+import AdminDashboard from "./pages/AdminDashboard";
+import Cre8Agent from "./pages/Cre8Agent";
+import AgencyDashboard from "./pages/AgencyDashboard";
+import Cre8Campaigns from "./pages/Cre8Campaigns";
+import ResetPassword from "./pages/ResetPassword";
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -40,16 +35,7 @@ const App = () => (
               <BrowserRouter>
                 <Routes>
                   <Route path="/" element={<Landing />} />
-                  <Route path="/features" element={<Features />} />
-                  <Route path="/showcase" element={<Showcase />} />
-                  <Route path="/privacy" element={<PrivacyPolicy />} />
-                  <Route path="/terms" element={<TermsOfService />} />
                   <Route path="/signin" element={
-                    <ProtectedRoute requireAuth={false}>
-                      <SignIn />
-                    </ProtectedRoute>
-                  } />
-                  <Route path="/login" element={
                     <ProtectedRoute requireAuth={false}>
                       <SignIn />
                     </ProtectedRoute>
@@ -59,9 +45,9 @@ const App = () => (
                       <SignUp />
                     </ProtectedRoute>
                   } />
-                  <Route path="/register" element={
+                  <Route path="/reset-password/:token" element={
                     <ProtectedRoute requireAuth={false}>
-                      <SignUp />
+                      <ResetPassword />
                     </ProtectedRoute>
                   } />
                   <Route path="/dashboard" element={
@@ -79,33 +65,39 @@ const App = () => (
                       <Cre8Echo />
                     </ProtectedRoute>
                   } />
-                  <Route path="/cre8canvas" element={
+                  <Route path="/studio" element={
                     <ProtectedRoute requireAuth={true}>
-                      <Cre8Canvas />
+                      <Cre8Studio />
                     </ProtectedRoute>
                   } />
-                  <Route path="/cre8boost" element={
-                    <ProtectedRoute requireAuth={true}>
-                      <Cre8Boost />
-                    </ProtectedRoute>
-                  } />
-                  <Route path="/cre8store" element={
+                  <Route path="/store" element={
                     <ProtectedRoute requireAuth={true}>
                       <Cre8Store />
                     </ProtectedRoute>
                   } />
-                  <Route path="/dashboard/store" element={
+                  <Route path="/store/:creatorId" element={<PublicStore />} />
+                  <Route path="/store/checkout/mock" element={<PublicStore mode="mock_checkout" />} />
+                  <Route path="/store/success" element={<PublicStore mode="success" />} />
+                  <Route path="/admin" element={
                     <ProtectedRoute requireAuth={true}>
-                      <Cre8Store />
+                      <AdminDashboard />
                     </ProtectedRoute>
                   } />
-                  <Route path="/store/:slug" element={<PublicStore />} />
-                  <Route path="/store/:slug/product/:productId" element={<PublicStoreProduct />} />
-                  <Route path="/success" element={<StoreSuccess />} />
-                  <Route path="/cancel" element={<StoreCancel />} />
-                  <Route path="/access" element={<StoreAccess />} />
-                  <Route path="/store/checkout-success" element={<StoreSuccess />} />
-                  <Route path="/auth/youtube/callback" element={<YouTubeCallback />} />
+                  <Route path="/agent" element={
+                    <ProtectedRoute requireAuth={true}>
+                      <Cre8Agent />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/agency" element={
+                    <ProtectedRoute requireAuth={true}>
+                      <AgencyDashboard />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/campaigns" element={
+                    <ProtectedRoute requireAuth={true}>
+                      <Cre8Campaigns />
+                    </ProtectedRoute>
+                  } />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
                 <Toaster />

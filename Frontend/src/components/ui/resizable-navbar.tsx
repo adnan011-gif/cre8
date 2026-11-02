@@ -237,7 +237,7 @@ export const NavbarLogo = () => {
       className="relative z-20 mr-4 flex items-center space-x-2 px-2 text-sm font-normal text-black"
     >
       <img
-        src="/lovable-uploads/logomain.png"
+        src="./public/lovable-uploads/logomain.png"
         alt="logo"
         width={80}
         height={80}

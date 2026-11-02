@@ -11,14 +11,12 @@ const userSchema = new mongoose.Schema({
     trim: true,
     match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, 'Please enter a valid email']
   },
-
   password: {
     type: String,
     required: [true, 'Password is required'],
     minlength: [6, 'Password must be at least 6 characters long'],
     select: false // Don't include password in queries by default
   },
-  
   fullName: {
     type: String,
     required: [true, 'Full name is required'],
@@ -48,12 +46,71 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+
+  // Email verification code (for login/signup/password-reset flow)
+  emailVerificationCode: {
+    type: String,
+    default: null,
+    select: false,
+  },
+  emailVerificationCodeExpires: {
+    type: Date,
+    default: null,
+  },
+  emailVerificationCodeAttempts: {
+    type: Number,
+    default: 0,
+  },
+
   lastLogin: {
     type: Date,
     default: null
   },
   avatar: {
     type: String,
+    default: null
+  },
+  currency: {
+    type: String,
+    default: 'INR',
+    enum: ['INR', 'USD', 'EUR', 'GBP', 'CAD', 'AUD'],
+  },
+
+  // Email verification flow (sign-in, sign-up, password reset)
+  emailVerificationToken: {
+    type: String,
+    default: null,
+  },
+  emailVerificationTokenExpires: {
+    type: Date,
+    default: null,
+  },
+
+  // Password reset (legacy, kept for compatibility)
+  resetPasswordToken: {
+    type: String,
+    default: null,
+  },
+  resetPasswordExpires: {
+    type: Date,
+    default: null,
+  },
+
+  // ── Multi-tenancy / platform access level ──────────────────────────────────
+  // accountType controls PLATFORM access level (separate from userRole which
+  // describes the creator's niche/profession).
+  accountType: {
+    type: String,
+    enum: {
+      values: ['creator', 'agency', 'admin'],
+      message: 'Account type must be one of: creator, agency, admin'
+    },
+    default: 'creator'
+  },
+  // Set when a creator is managed by an agency — references AgencyAccount._id
+  agencyId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'AgencyAccount',
     default: null
   },
 
@@ -545,34 +602,6 @@ const userSchema = new mongoose.Schema({
     }
   },
 
-  // OAuth tokens for YouTube integration
-  youtubeTokens: {
-    accessToken: {
-      type: String,
-      select: false // Don't include in queries by default for security
-    },
-    refreshToken: {
-      type: String,
-      select: false // Don't include in queries by default for security
-    },
-    expiresAt: {
-      type: Date,
-      default: null
-    },
-    scope: [{
-      type: String,
-      trim: true
-    }],
-    connectedAt: {
-      type: Date,
-      default: null
-    },
-    isConnected: {
-      type: Boolean,
-      default: false
-    }
-  },
-
   // Persona data (for your persona extraction feature)
   persona: {
     extractedFrom: {
@@ -799,51 +828,6 @@ userSchema.methods.addPastOutput = function(outputData) {
 // Method to update persona
 userSchema.methods.updatePersona = function(personaData) {
   Object.assign(this.persona, personaData, { extractedAt: new Date() });
-  return this.save();
-};
-
-// Method to store YouTube OAuth tokens
-userSchema.methods.storeYouTubeTokens = function(tokens) {
-  this.youtubeTokens = {
-    accessToken: tokens.access_token,
-    refreshToken: tokens.refresh_token,
-    expiresAt: new Date(Date.now() + (tokens.expires_in * 1000)),
-    scope: tokens.scope ? tokens.scope.split(' ') : [],
-    connectedAt: new Date(),
-    isConnected: true
-  };
-  return this.save();
-};
-
-// Method to refresh YouTube access token
-userSchema.methods.refreshYouTubeToken = async function() {
-  if (!this.youtubeTokens.refreshToken) {
-    throw new Error('No refresh token available');
-  }
-  
-  // This would typically make an API call to Google to refresh the token
-  // For now, we'll just update the expiration
-  this.youtubeTokens.expiresAt = new Date(Date.now() + (3600 * 1000)); // 1 hour from now
-  return this.save();
-};
-
-// Method to check if YouTube token is valid
-userSchema.methods.isYouTubeTokenValid = function() {
-  return this.youtubeTokens.isConnected && 
-         this.youtubeTokens.expiresAt && 
-         this.youtubeTokens.expiresAt > new Date();
-};
-
-// Method to disconnect YouTube
-userSchema.methods.disconnectYouTube = function() {
-  this.youtubeTokens = {
-    accessToken: null,
-    refreshToken: null,
-    expiresAt: null,
-    scope: [],
-    connectedAt: null,
-    isConnected: false
-  };
   return this.save();
 };
 

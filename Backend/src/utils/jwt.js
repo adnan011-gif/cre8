@@ -78,10 +78,8 @@ const refreshJWT = (token) => {
     const newToken = jwt.sign(
       {
         userId: decoded.userId,
-        id: decoded.id || decoded.userId,
         email: decoded.email,
-        userRole: decoded.userRole,
-        role: decoded.role || decoded.userRole
+        userRole: decoded.userRole
       },
       process.env.JWT_SECRET,
       { expiresIn: '7d' }

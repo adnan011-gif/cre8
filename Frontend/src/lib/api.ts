@@ -1,4 +1,25 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL ;
+const API_BASE_URL = import.meta.env.VITE_API_URL;
+
+/**
+ * Shared error parser for all fetch calls in the app.
+ * Extracts the error message from a failed HTTP response,
+ * supporting both Python FastAPI (detail) and Node.js (error/message) formats.
+ *
+ * Usage: if (!response.ok) throw new Error(await parseApiError(response));
+ */
+export async function parseApiError(response: Response): Promise<string> {
+  try {
+    const body = await response.clone().json().catch(() => ({}));
+    return body.detail || body.error?.message || body.error || body.message || `HTTP ${response.status} ${response.statusText}`;
+  } catch {
+    try {
+      const text = await response.clone().text();
+      return text || `HTTP ${response.status} ${response.statusText}`;
+    } catch {
+      return `HTTP ${response.status} ${response.statusText}`;
+    }
+  }
+}
 
 interface ApiResponse<T = any> {
   data?: T;
@@ -13,10 +34,12 @@ class ApiService {
     this.baseURL = baseURL;
   }
 
-  private async request<T>(
+  // Public so admin dashboard can call arbitrary endpoints
+  async request<T>(
     endpoint: string,
     options: RequestInit = {}
   ): Promise<ApiResponse<T>> {
+
     const url = `${this.baseURL}${endpoint}`;
     
     const config: RequestInit = {
@@ -87,6 +110,56 @@ class ApiService {
     });
   }
 
+  // Email verification code flow
+  async sendCode(email: string) {
+    return this.request('/users/send-code', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
+  }
+
+  async sendCodeForSignUp(email: string) {
+    return this.request('/users/send-code-signup', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
+  }
+
+  async verifyCode(email: string, code: string) {
+    return this.request('/users/verify-code', {
+      method: 'POST',
+      body: JSON.stringify({ email, code }),
+    });
+  }
+
+  async signInWithVerification(email: string, password: string, verificationToken: string) {
+    return this.request('/users/signin', {
+      method: 'POST',
+      body: JSON.stringify({ email, password, verificationToken }),
+    });
+  }
+
+  async signUpWithVerification(email: string, password: string, fullName: string, verificationToken: string, userRole?: string) {
+    return this.request('/users/signup', {
+      method: 'POST',
+      body: JSON.stringify({ email, password, fullName, verificationToken, userRole }),
+    });
+  }
+
+  async forgotPassword(email: string) {
+    return this.request('/users/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
+  }
+
+  async resetPassword(email: string, verificationToken: string, password: string) {
+    return this.request('/users/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ email, verificationToken, password }),
+    });
+  }
+
   async logout() {
     return this.request('/users/logout', {
       method: 'POST',
@@ -111,98 +184,11 @@ class ApiService {
       body: JSON.stringify(roleData),
     });
   }
-
-  // Store endpoints
-  async getMyStore() {
-    return this.request('/stores/mine');
-  }
-
-  async createStore(storeName: string) {
-    return this.request('/stores', {
-      method: 'POST',
-      body: JSON.stringify({ storeName }),
-    });
-  }
-
-  async updateMyStore(storeData: any) {
-    return this.request('/stores/mine', {
-      method: 'PATCH',
-      body: JSON.stringify(storeData),
-    });
-  }
-
-  async publishStore(storeId: string) {
-    return this.request(`/stores/${storeId}/publish`, {
-      method: 'POST',
-    });
-  }
-
-  async getPublicStore(slug: string) {
-    return this.request(`/stores/public/${slug}`);
-  }
-
-  // Product endpoints
-  async getMyProducts() {
-    return this.request('/products/mine');
-  }
-
-  async getProductById(productId: string) {
-    return this.request(`/products/${productId}`);
-  }
-
-  async createProduct(productData: any) {
-    return this.request('/products', {
-      method: 'POST',
-      body: JSON.stringify(productData),
-    });
-  }
-
-  async updateProduct(productId: string, productData: any) {
-    return this.request(`/products/${productId}`, {
-      method: 'PUT',
-      body: JSON.stringify(productData),
-    });
-  }
-
-  async publishProduct(productId: string) {
-    return this.request(`/products/${productId}/publish`, {
-      method: 'PATCH',
-    });
-  }
-
-  async deleteProduct(productId: string) {
-    return this.request(`/products/${productId}`, {
-      method: 'DELETE',
-    });
-  }
-
-  // Order endpoints
-  async createOrder(orderData: any) {
-    return this.request('/orders', {
-      method: 'POST',
-      body: JSON.stringify(orderData),
-    });
-  }
-
-  async getMySales() {
-    return this.request('/orders/my-sales');
-  }
-
-  async getMyPurchases() {
-    return this.request('/orders/my-purchases');
-  }
   // Persona endpoints
-  async extractPersonaFromYouTube(userId: string) {
+  async extractPersonaFromYouTube(channelId: string) {
     return this.request('/youtube/extract-persona', {
       method: 'POST',
-      body: JSON.stringify({ userId }),
-    });
-  }
-
-  async extractPersonaFromChannel(channelId: string, userId: string) {
-    return this.request('/youtube/extract-persona-channel', {
-      method: 'POST',
-      body: JSON.stringify({ channelId, userId }),
+      body: JSON.stringify({ channelId }),
     });
   }
 
@@ -210,27 +196,6 @@ class ApiService {
     return this.request('/youtube/manual-persona', {
       method: 'POST',
       body: JSON.stringify({ persona }),
-    });
-  }
-
-  // OAuth endpoints
-  async getYouTubeAuthUrl() {
-    return this.request('/oauth/youtube/auth-url');
-  }
-
-  async getYouTubeConnectionStatus() {
-    return this.request('/oauth/youtube/status');
-  }
-
-  async disconnectYouTube() {
-    return this.request('/oauth/youtube/disconnect', {
-      method: 'POST',
-    });
-  }
-
-  async refreshYouTubeToken() {
-    return this.request('/oauth/youtube/refresh-token', {
-      method: 'POST',
     });
   }
   async updatePersona(personaData: any) {
@@ -256,6 +221,222 @@ class ApiService {
   // Health check
   async healthCheck() {
     return this.request('/health');
+  }
+
+  // Asset library endpoints
+  async saveAsset(assetData: {
+    type: 'image' | 'video' | 'thumbnail' | 'poster' | 'ad_creative' | 'short' | 'clip' | 'audio';
+    hub: 'studio' | 'store' | 'agent' | 'echo';
+    campaignId?: string;
+    title?: string;
+    description?: string;
+    url: string;
+    metadata?: any;
+    tags?: string[];
+  }) {
+    return this.request('/assets', {
+      method: 'POST',
+      body: JSON.stringify(assetData),
+    });
+  }
+
+  async getAssets(filters?: { hub?: string; type?: string; campaignId?: string }) {
+    const params = new URLSearchParams();
+    if (filters?.hub) params.append('hub', filters.hub);
+    if (filters?.type) params.append('type', filters.type);
+    if (filters?.campaignId) params.append('campaignId', filters.campaignId);
+    
+    const query = params.toString() ? `?${params.toString()}` : '';
+    return this.request(`/assets${query}`);
+  }
+
+  async deleteAsset(assetId: string) {
+    return this.request(`/assets/${assetId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Store endpoints
+  async createProduct(productData: { name: string; description?: string; price: number; image?: string }) {
+    return this.request('/store/products', {
+      method: 'POST',
+      body: JSON.stringify(productData),
+    });
+  }
+
+  async getProducts() {
+    return this.request('/store/products');
+  }
+
+  async updateProduct(productId: string, productData: any) {
+    return this.request(`/store/products/${productId}`, {
+      method: 'PUT',
+      body: JSON.stringify(productData),
+    });
+  }
+
+  async deleteProduct(productId: string) {
+    return this.request(`/store/products/${productId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async getPublicStorefront(creatorId: string) {
+    return this.request(`/store/public/${creatorId}`);
+  }
+
+  async createCheckoutSession(checkoutData: { productId: string; customerEmail: string }) {
+    return this.request('/store/checkout', {
+      method: 'POST',
+      body: JSON.stringify(checkoutData),
+    });
+  }
+
+  async confirmMockPayment(sessionId: string) {
+    return this.request('/store/checkout/confirm-mock', {
+      method: 'POST',
+      body: JSON.stringify({ sessionId }),
+    });
+  }
+
+  async getCreatorOrders() {
+    return this.request('/store/orders');
+  }
+
+  async updateOrderStatus(orderId: string, status: 'paid' | 'fulfilled' | 'refunded') {
+    return this.request(`/store/orders/${orderId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ status }),
+    });
+  }
+
+  // Agency endpoints
+  async getAgencyProfile() {
+    return this.request('/agency/profile');
+  }
+
+  async createAgencyProfile(agencyName: string) {
+    return this.request('/agency/profile', {
+      method: 'POST',
+      body: JSON.stringify({ agencyName }),
+    });
+  }
+
+  async getAgencyRoster() {
+    return this.request('/agency/roster');
+  }
+
+  async addCreatorToRoster(creatorEmail: string, role: 'view' | 'act-as' = 'view') {
+    return this.request('/agency/roster/add', {
+      method: 'POST',
+      body: JSON.stringify({ creatorEmail, role }),
+    });
+  }
+
+  async removeCreatorFromRoster(creatorId: string) {
+    return this.request(`/agency/roster/${creatorId}`, { method: 'DELETE' });
+  }
+
+  async updateCreatorRole(creatorId: string, role: 'view' | 'act-as') {
+    return this.request(`/agency/roster/${creatorId}/role`, {
+      method: 'PUT',
+      body: JSON.stringify({ role }),
+    });
+  }
+
+  async actAsCreator(creatorId: string) {
+    return this.request(`/agency/act-as/${creatorId}`, { method: 'POST' });
+  }
+
+  async getAgencyPerformance() {
+    return this.request('/agency/performance');
+  }
+
+  async getAgencyAuditLog() {
+    return this.request('/agency/audit');
+  }
+
+  // Ads / Campaign Planner endpoints
+  async getAdProducts() {
+    return this.request('/ads/products');
+  }
+
+  async generateAdCopy(productId: string, platform?: string, targetAudience?: string) {
+    return this.request('/ads/generate-copy', {
+      method: 'POST',
+      body: JSON.stringify({ productId, platform, targetAudience }),
+    });
+  }
+
+  async getAdCreatives() {
+    return this.request('/ads/creatives');
+  }
+
+  async exportCampaignPack(data: {
+    productId: string;
+    adCopy: string;
+    selectedAssetIds: string[];
+    platform?: string;
+    targetAudience?: string;
+    budget?: string;
+  }) {
+    return this.request('/ads/export-pack', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  // Wallet endpoints
+  async getWallet() {
+    return this.request('/wallet');
+  }
+
+  async depositToWallet(amount: number) {
+    return this.request('/wallet/deposit', {
+      method: 'POST',
+      body: JSON.stringify({ amount }),
+    });
+  }
+
+  async confirmWalletDeposit(sessionId: string) {
+    return this.request('/wallet/confirm-deposit', {
+      method: 'POST',
+      body: JSON.stringify({ sessionId }),
+    });
+  }
+
+  async spendFromWallet(amount: number, description?: string) {
+    return this.request('/wallet/spend', {
+      method: 'POST',
+      body: JSON.stringify({ amount, description }),
+    });
+  }
+
+  // Promotion endpoints
+  async promoteProduct(productId: string, budget: number) {
+    return this.request(`/store/products/${productId}/promote`, {
+      method: 'POST',
+      body: JSON.stringify({ budget }),
+    });
+  }
+
+  async unPromoteProduct(productId: string) {
+    return this.request(`/store/products/${productId}/unpromote`, {
+      method: 'POST',
+    });
+  }
+
+  // Performance Watcher endpoint
+  async analyzePostPerformance(post: {
+    title: string;
+    type?: string;
+    content?: string;
+    metrics: { views?: number; likes?: number; comments?: number; shares?: number; engagement_rate?: number };
+  }) {
+    return this.request('/performance/analyze', {
+      method: 'POST',
+      body: JSON.stringify({ post }),
+    });
   }
 }
 

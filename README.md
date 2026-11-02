@@ -8,7 +8,7 @@ A comprehensive backend API for the Cre8Hub application built with Node.js, Expr
 - **Unified User Model**: Single MongoDB model with embedded profile data
 - **Role-Based Profiles**: Support for content creators, entrepreneurs, and social media managers
 - **Security**: Rate limiting, CORS, helmet security headers
-- **Modular Architecture**: Clean separation of routes, controllers, services,and models
+- **Modular Architecture**: Clean separation of routes, controllers, services, and models
 
 ## 📁 Project Structure
 
@@ -119,6 +119,15 @@ Cre8Hub/
 - `GET /api/users` - Get all users (admin only)
 - `GET /api/users/:userId` - Get user by ID (admin only)
 
+## 🧪 Sample Data
+
+After running `npm run seed`, you can test with these credentials:
+
+- **Content Creator**: `john.doe@example.com` / `Password123!`
+- **Entrepreneur**: `jane.smith@example.com` / `Password123!`
+- **Social Media Manager**: `mike.johnson@example.com` / `Password123!`
+- **Admin**: `admin@cre8hub.com` / `Admin123!`
+
 ## 🔒 Security Features
 
 - **JWT Authentication**: Secure token-based authentication
@@ -172,4 +181,4 @@ This project is licensed under the MIT License.
 
 ## 🆘 Support
 
-For support, please open an issue in the GitHub repository or contact the development team. 
+For support, please open an issue in the GitHub repository or contact the development team. # Cre8hub

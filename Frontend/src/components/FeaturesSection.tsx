@@ -1,5 +1,5 @@
 
-import { Brain, Image, BarChart3, VideoIcon, Sparkle, Zap } from "lucide-react";
+import { Brain,Image, BarChart3,VideoIcon,Sparkle, Users, Zap, Target, Shield } from "lucide-react";
 
 const features = [
   {
@@ -23,9 +23,9 @@ const features = [
     description: "Creator Analytics – Track engagement, identify trends, and understand what drives growth with advanced performance insights."
   },
   {
-    icon: Zap,
-    title: "Cre8Boost",
-    description: "Launch-Ready in One Click – Mark your project as ready, get auto-generated promo assets, multi-platform formatting, and instant distribution to social and the Cre8Hub showcase."
+    icon: Target,
+    title: "Cre8Reach",
+    description: "Personalized Audience Growth – Reach more viewers with AI-driven targeting, posting strategies, and platform-specific recommendations."
   },
   {
     icon: Sparkle,

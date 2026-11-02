@@ -1,0 +1,23 @@
+# Server Configuration
+PORT=5000
+NODE_ENV=development
+
+# MongoDB Configuration
+MONGODB_URI=mongodb://localhost:27017/cre8hub
+
+# JWT Configuration
+JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
+
+# Frontend Configuration (for CORS)
+FRONTEND_URL=http://localhost:5173
+
+# YouTube API Configuration (for persona extraction)
+YOUTUBE_API_KEY=your-youtube-api-key-here
+
+# Redis Configuration (for caching)
+REDIS_HOST=127.0.0.1
+REDIS_PORT=6379
+REDIS_PASSWORD=
+
+# AI Service Configuration (for persona analysis)
+AI_SERVICE_URL=http://localhost:8000

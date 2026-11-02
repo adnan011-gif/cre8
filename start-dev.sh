@@ -38,7 +38,7 @@ start_backend() {
         exit 1
     fi
     
-    echo "🔧 Backend starting on http://localhost:5000"
+    echo "🔧 Backend starting on http://localhost:5001"
     npm run dev &
     BACKEND_PID=$!
     cd ..
@@ -61,7 +61,7 @@ start_frontend() {
         cp env.example .env.local
     fi
     
-    echo "🔧 Frontend starting on http://localhost:3000"
+    echo "🔧 Frontend starting on http://localhost:8080"
     npm run dev &
     FRONTEND_PID=$!
     cd ..
@@ -91,9 +91,9 @@ start_frontend
 
 echo ""
 echo "🎉 Cre8Hub is running!"
-echo "   Frontend: http://localhost:3000"
-echo "   Backend:  http://localhost:5000"
-echo "   Health Check: http://localhost:5000/api/health"
+echo "   Frontend: http://localhost:8080"
+echo "   Backend:  http://localhost:5001"
+echo "   Health Check: http://localhost:5001/api/health"
 echo ""
 echo "Press Ctrl+C to stop all servers"
 

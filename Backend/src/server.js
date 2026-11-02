@@ -63,6 +63,7 @@ app.use(cors({
       if (
         allowedOrigins.includes(normalized) ||
         hostname.endsWith('.vercel.app') ||
+        hostname.endsWith('.onrender.com') ||
         process.env.NODE_ENV !== 'production'
       ) {
         return callback(null, true);
@@ -87,7 +88,7 @@ if (process.env.NODE_ENV === 'development') {
 }
 
 // Health check endpoint
-app.get('/api/health', (req, res) => {
+app.get(['/health', '/api/health'], (req, res) => {
   res.json({ 
     status: 'OK', 
     message: 'Cre8Hub Backend is running',
@@ -96,16 +97,18 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// API routes
-app.use('/api/users', userRoutes);
-app.use("/api/youtube", youtubeRoutes);
-app.use("/api/assets", assetRoutes);
-app.use("/api/store", storeRoutes);
-app.use("/api/admin", adminRoutes);
-app.use("/api/agency", agencyRoutes);
-app.use("/api/ads", adsRoutes);
-app.use("/api/performance", performanceRoutes);
-app.use("/api/wallet", walletRoutes);
+// Mount API routes on both '/api' and '/' so requests work regardless of frontend prefix
+['/api', ''].forEach(prefix => {
+  app.use(`${prefix}/users`, userRoutes);
+  app.use(`${prefix}/youtube`, youtubeRoutes);
+  app.use(`${prefix}/assets`, assetRoutes);
+  app.use(`${prefix}/store`, storeRoutes);
+  app.use(`${prefix}/admin`, adminRoutes);
+  app.use(`${prefix}/agency`, agencyRoutes);
+  app.use(`${prefix}/ads`, adsRoutes);
+  app.use(`${prefix}/performance`, performanceRoutes);
+  app.use(`${prefix}/wallet`, walletRoutes);
+});
 
 
 // 404 handler

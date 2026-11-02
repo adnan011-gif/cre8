@@ -1,4 +1,5 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL;
+const rawBase = (import.meta.env.VITE_API_URL || 'http://localhost:5001/api').trim().replace(/\/+$/, '');
+const API_BASE_URL = rawBase.endsWith('/api') ? rawBase : `${rawBase}/api`;
 
 /**
  * Shared error parser for all fetch calls in the app.

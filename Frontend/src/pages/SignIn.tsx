@@ -246,7 +246,16 @@ const SignIn = () => {
       return;
     }
 
-    toast({ title: 'Code sent', description: 'Check your email for the 6-digit code' });
+    const returnedCode = (result.data as any)?.code;
+    if (returnedCode) {
+      toast({ 
+        title: 'Verification Code', 
+        description: `Your code is: ${returnedCode}`,
+        duration: 20000 
+      });
+    } else {
+      toast({ title: 'Code sent', description: 'Check your email for the 6-digit code' });
+    }
     setStep('code');
     setTimeout(() => codeRefs.current[0]?.focus(), 100);
   };

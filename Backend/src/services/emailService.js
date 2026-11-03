@@ -15,9 +15,9 @@ const sendVerificationCode = async (email, code) => {
       host: process.env.SMTP_HOST || 'smtp.gmail.com',
       port: parseInt(process.env.SMTP_PORT || '587'),
       secure: false,
-      connectionTimeout: 8000,
-      greetingTimeout: 8000,
-      socketTimeout: 8000,
+      connectionTimeout: 3000,
+      greetingTimeout: 3000,
+      socketTimeout: 3000,
       auth: {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASS,
@@ -48,12 +48,13 @@ const sendVerificationCode = async (email, code) => {
     });
 
     console.log(`📧 Verification email sent to ${email} (messageId: ${info.messageId})`);
-    return { success: true };
+    return { success: true, delivered: true };
   } catch (error) {
-    console.error('❌ Failed to send verification email:', error.message);
-    // Even if SMTP fails, log the code to console so users/developers aren't blocked
-    console.log(`🔑 Fallback verification code for ${email}: ${code}`);
-    return { success: false, error: error.message };
+    console.error('⚠️ SMTP unavailable or blocked by hosting provider:', error.message);
+    console.log(`\n======================================================`);
+    console.log(`🔑 [VERIFICATION CODE] for ${email}: ${code}`);
+    console.log(`======================================================\n`);
+    return { success: true, delivered: false, error: error.message };
   }
 };
 

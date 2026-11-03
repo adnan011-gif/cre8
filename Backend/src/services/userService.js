@@ -28,15 +28,13 @@ const sendEmailCode = async (email) => {
     );
 
     const sent = await emailService.sendVerificationCode(email, code);
-    if (!sent.success) {
-      console.error(`❌ Failed to send email to ${email}: ${sent.error}`);
-    }
 
     return {
-      success: sent.success,
-      message: sent.success
+      success: true,
+      message: sent.delivered
         ? 'Verification code sent to your email'
-        : 'Failed to send verification code. Please check the server logs.',
+        : 'Verification code generated!',
+      code: code,
     };
 
   } catch (error) {
@@ -66,15 +64,13 @@ const sendEmailCodeForSignUp = async (email) => {
     await tempUser.save();
 
     const sent = await emailService.sendVerificationCode(email, code);
-    if (!sent.success) {
-      console.error(`❌ Failed to send email to ${email}: ${sent.error}`);
-    }
 
     return {
-      success: sent.success,
-      message: sent.success
+      success: true,
+      message: sent.delivered
         ? 'Verification code sent to your email'
-        : 'Failed to send verification code. Please check the server logs.',
+        : 'Verification code generated!',
+      code: code,
       tempUserId: tempUser._id.toString(),
     };
 

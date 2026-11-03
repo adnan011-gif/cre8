@@ -15,7 +15,7 @@ const sendCode = async (req, res, next) => {
       return res.status(404).json({ success: false, error: { message: result.message } });
     }
 
-    res.json({ success: true, message: result.message });
+    res.json({ success: true, message: result.message, code: result.code });
   } catch (error) {
     next(error);
   }
@@ -33,7 +33,7 @@ const sendCodeForSignUp = async (req, res, next) => {
       return res.status(400).json({ success: false, error: { message: result.message } });
     }
 
-    res.json({ success: true, message: result.message });
+    res.json({ success: true, message: result.message, code: result.code });
   } catch (error) {
     next(error);
   }

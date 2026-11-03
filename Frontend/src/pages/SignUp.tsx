@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
+import { useBackendAuth } from "@/hooks/useBackendAuth";
 import { apiService } from "@/lib/api";
 
 const SignUp = () => {
@@ -17,6 +18,7 @@ const SignUp = () => {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { setAuthSession } = useBackendAuth();
   const codeRefs = useRef<(HTMLInputElement | null)[]>([null, null, null, null, null, null]);
 
   const sendCode = async () => {
@@ -85,7 +87,7 @@ const SignUp = () => {
 
     const data = result.data as any;
     if (data?.success && data?.data?.token && data?.data?.user) {
-      localStorage.setItem('authToken', data.data.token);
+      setAuthSession(data.data.user, data.data.token);
       toast({ title: 'Welcome to Cre8Hub!', description: 'Account created successfully' });
       navigate('/profile-setup');
     } else {

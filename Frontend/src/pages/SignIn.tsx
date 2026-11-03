@@ -232,7 +232,7 @@ const SignIn = () => {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { signIn } = useBackendAuth();
+  const { signIn, setAuthSession } = useBackendAuth();
   const codeRefs = useRef<(HTMLInputElement | null)[]>([null, null, null, null, null, null]);
 
   const sendCode = async () => {
@@ -285,7 +285,7 @@ const SignIn = () => {
 
     const data = result.data as any;
     if (data?.success && data?.data?.token && data?.data?.user) {
-      localStorage.setItem('authToken', data.data.token);
+      setAuthSession(data.data.user, data.data.token);
       toast({ title: 'Welcome back!', description: 'Successfully signed in' });
       navigate('/dashboard');
     } else {

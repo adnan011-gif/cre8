@@ -20,6 +20,8 @@ interface AuthContextType {
   signUp: (email: string, password: string, name: string) => Promise<{ error?: string }>;
   signOut: () => void;
   refreshUser: () => Promise<void>;
+  setAuthSession: (user: any, token: string) => void;
+  setUser: (user: User | null) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -37,6 +39,20 @@ export const BackendAuthProvider = ({ children }: { children: React.ReactNode })
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
+  const normalizeUser = (rawUser: any): User => {
+    return {
+      ...rawUser,
+      id: rawUser._id || rawUser.id,
+      name: rawUser.fullName || rawUser.name || (rawUser.email ? rawUser.email.split('@')[0] : 'Creator'),
+    };
+  };
+
+  const setAuthSession = (userData: any, token: string) => {
+    localStorage.setItem('authToken', token);
+    const normalized = normalizeUser(userData);
+    setUser(normalized);
+  };
+
   const refreshUser = async () => {
     try {
       const result = await apiService.getCurrentUser();
@@ -50,7 +66,7 @@ export const BackendAuthProvider = ({ children }: { children: React.ReactNode })
           typeof result.data.data === 'object' &&
           'user' in result.data.data
       ) {
-        setUser(result.data.data.user as User);
+        setUser(normalizeUser(result.data.data.user));
       } else {
         setUser(null);
         localStorage.removeItem('authToken');
@@ -248,6 +264,8 @@ export const BackendAuthProvider = ({ children }: { children: React.ReactNode })
     signUp,
     signOut,
     refreshUser,
+    setAuthSession,
+    setUser,
   };
 
   return (

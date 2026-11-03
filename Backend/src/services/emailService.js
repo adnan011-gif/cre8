@@ -19,7 +19,39 @@ const sendVerificationCode = async (email, code) => {
     </div>
   `;
 
-  // 1. Primary: Resend HTTPS API (Works on Render/Vercel/Cloud - NEVER blocked)
+  // 1. Primary: Brevo HTTPS REST API (Free 300 emails/day to ANY email address without domain verification)
+  if (process.env.BREVO_API_KEY) {
+    try {
+      const senderEmail = process.env.BREVO_SENDER_EMAIL || process.env.SMTP_USER || 'adnankhanofficial105@gmail.com';
+      const senderName = process.env.BREVO_SENDER_NAME || 'Cre8Hub';
+      const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+        method: 'POST',
+        headers: {
+          'api-key': process.env.BREVO_API_KEY,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify({
+          sender: { name: senderName, email: senderEmail },
+          to: [{ email }],
+          subject: 'Your Cre8Hub Verification Code',
+          htmlContent,
+        }),
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        console.log(`📧 [Brevo] Verification email delivered to ${email} (messageId: ${data.messageId})`);
+        return { success: true, delivered: true };
+      } else {
+        console.error('⚠️ Brevo API error:', data);
+      }
+    } catch (err) {
+      console.error('⚠️ Brevo HTTP error:', err.message);
+    }
+  }
+
+  // 2. Secondary: Resend HTTPS API (Works on Render/Vercel/Cloud)
   if (process.env.RESEND_API_KEY) {
     try {
       const response = await fetch('https://api.resend.com/emails', {
